@@ -838,27 +838,7 @@ def get_default_map_table() -> pd.DataFrame:
 # "Our Map" UI removed per request. Kept helper functions for map data intact.
 
 
-def render_sidebar_calls() -> None:
-    with st.sidebar:
-        st.header("R4 Voice Call Cheat Sheet")
-        st.markdown(
-            """
-            - `5-4-3-2-1 - Wave 1 go`
-            - `5-4-3-2-1 - Wave 2 go`
-            - `5-4-3-2-1 - Wave 3 go`
-            - `Castle held - Group 2 move NOW`
-            - `Group 2 - release now`
-            - `Withdraw in 10-9-8...`
-            - `Everyone solo attack`
-            """
-        )
-        st.divider()
-        st.subheader("Turret Lethality")
-        turret_count = st.slider("Turrets Held", min_value=0, max_value=4, value=0)
-        lethality_map = {0: 0, 1: 8, 2: 12, 3: 15, 4: 20}
-        lethality = lethality_map[turret_count]
-        st.metric("Current Lethality Bonus", f"+{lethality}%")
-        st.caption("Turret order: East -> South -> West -> North")
+# Sidebar removed per user request (side panel and voice cheat sheet)
 
 
 def render_wave_and_timing_tab(excel_data: dict) -> None:
@@ -902,13 +882,7 @@ def render_wave_and_timing_tab(excel_data: dict) -> None:
             "Wave 2 (4-6 tiles)": int(m2),
             "Wave 3 (7-10 tiles)": int(m3),
         }
-        wave_df = build_wave_table(launch_times, march_times)
-        st.dataframe(wave_df, use_container_width=True, hide_index=True)
-        render_wave_visual(wave_df)
-        arrivals = [base_dt + timedelta(seconds=int(m1)), t2_dt + timedelta(seconds=int(m2)), t3_dt + timedelta(seconds=int(m3))]
-        spread = int((max(arrivals) - min(arrivals)).total_seconds())
-        st.metric("Estimated Arrival Spread", f"{spread} sec")
-        st.info("Launch times are primary. Arrival is shown only for validation.")
+        # Wave table, chart, and estimated spread removed as requested
 
         # Different-time (staggered) arrival message (e.g., +15s, +30s)
         stagger_lines = ["(Wave strategy: staggered arrival)"]
@@ -920,78 +894,48 @@ def render_wave_and_timing_tab(excel_data: dict) -> None:
             stagger_msg = stagger_msg[:509] + "..."
         st.text_area("Copy message - Different arrival (plain text, <=512 chars)", value=stagger_msg, height=120)
 
-        # Synchronized arrival search (within next 5 minutes)
-        march_times_list = [int(m1), int(m2), int(m3)]
-        
-        # Initialize session state for synchronized arrival input
+        # (Synchronized arrival controls moved to the right column)
+
+    with right:
+        st.markdown('<div class="cc-card">Synchronized Arrival</div>', unsafe_allow_html=True)
+        # Synchronized arrival controls (moved to right column)
+
+        # Allow overriding march times specifically for synchronized arrival
+        sync_m1 = st.number_input("Synchronized Wave 1 March Time (sec)", min_value=1, value=int(m1), key="sync_m1")
+        sync_m2 = st.number_input("Synchronized Wave 2 March Time (sec)", min_value=1, value=int(m2), key="sync_m2")
+        sync_m3 = st.number_input("Synchronized Wave 3 March Time (sec)", min_value=1, value=int(m3), key="sync_m3")
+
+        march_times_list = [int(sync_m1), int(sync_m2), int(sync_m3)]
+
         if "sync_arrival_input" not in st.session_state:
             st.session_state.sync_arrival_input = "12:00:00"
-        
-        # Allow user to choose desired synchronized arrival time (text input like Wave 1)
+
         desired_time_text = st.text_input(
-            "Synchronized Arrival Time (HH:MM:SS)", 
+            "Synchronized Arrival Time (HH:MM:SS)",
             value=st.session_state.sync_arrival_input,
-            key="sync_arrival_time_input"
+            key="sync_arrival_time_input_right",
         )
         st.session_state.sync_arrival_input = desired_time_text
-        
         desired_time = parse_hms(desired_time_text)
         if desired_time is None:
             st.error("Invalid synchronized arrival time. Use HH:MM:SS (example: 10:08:09).")
         else:
             desired_dt = datetime.combine(reference_date, desired_time)
-            
-            # compute required launches for chosen arrival
             chosen_lines = ["(Synchronized Arrival - chosen)"]
             for i in range(1, 4):
-                lt = desired_dt - timedelta(seconds=march_times_list[i-1])
-                chosen_lines.append(f"Wave {i}: launch {lt.strftime('%H:%M:%S')}")
+                lt = desired_dt - timedelta(seconds=march_times_list[i - 1])
+                mt = march_times_list[i - 1]
+                chosen_lines.append(f"Wave {i}: launch {lt.strftime('%H:%M:%S')} (march {mt}s)")
             chosen_msg = "\n".join(chosen_lines)
             if len(chosen_msg) > 512:
                 chosen_msg = chosen_msg[:509] + "..."
-            st.text_area("Copy message - Synchronized arrival (plain text, <=512 chars)", value=chosen_msg, height=160)
-
-    with right:
-        st.markdown('<div class="cc-card">Wave Utilities</div>', unsafe_allow_html=True)
-        sheet4 = get_sheet(excel_data, "Fill Tracker")
-        tracker_df = extract_fill_tracker(sheet4)
-        if tracker_df.empty:
-            st.info("No tracker rows loaded from Sheet 4.")
-        else:
-            editable = tracker_df[tracker_df["Rally / Leader"].str.contains("Wave", regex=False)].copy()
-            for idx in editable.index:
-                editable.at[idx, "Current Fill"] = st.number_input(
-                    f"{editable.at[idx, 'Rally / Leader']} current fill",
-                    min_value=0,
-                    max_value=int(editable.at[idx, "Max Capacity"]),
-                    value=int(editable.at[idx, "Current Fill"]),
-                    step=1,
-                    key=f"wave_fill_{idx}",
-                )
-            editable["Launch Gate"] = editable.apply(
-                lambda r: "READY" if int(r["Current Fill"]) >= int(r["Min Fillers"]) else "HOLD", axis=1
+            st.text_area(
+                "Copy message - Synchronized arrival (plain text, <=512 chars)", value=chosen_msg, height=160
             )
-            st.dataframe(editable, use_container_width=True, hide_index=True)
-            min_wave_pct = (editable["Current Fill"] / editable["Max Capacity"]).min() * 100
-            st.metric("Lowest Wave Fill %", f"{min_wave_pct:.0f}%")
-            if min_wave_pct < 60:
-                st.warning("Next cycle blocked: 60% fill gate not met.")
-            else:
-                st.success("60% fill gate met.")
-
-        st.markdown('<div class="cc-card">Active Command Rules</div>', unsafe_allow_html=True)
-        st.markdown(
-            """
-            - `5-4-3-2-1 - Wave 1 go`, then +15s and +30s sequence.
-            - Do NOT launch any rally below 6 fillers.
-            - During 5-minute gap call: `Everyone solo attack`.
-            - Group 2 release only when enemy rally is confirmed in flight.
-            """
-        )
 
 def main() -> None:
     inject_command_center_css()
-    render_sidebar_calls()
+    # Sidebar removed per user request
 
     st.title("KvK Castle Battle Command Center")
     st.caption("Strategy-assisted battle orchestration based on wave funnel and command cadence.")
