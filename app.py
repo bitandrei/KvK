@@ -2,8 +2,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import re
 
+import json
 import pandas as pd
 import streamlit as st
+import KvK
 
 
 st.set_page_config(
@@ -933,6 +935,332 @@ def render_wave_and_timing_tab(excel_data: dict) -> None:
                 "Copy message - Synchronized arrival (plain text, <=512 chars)", value=chosen_msg, height=160
             )
 
+
+def apply_column_filters(df: pd.DataFrame, filters: dict) -> pd.DataFrame:
+    """
+    Apply multiple column filters to roster dataframe.
+    
+    Args:
+        df: Original dataframe
+        filters: Dict with column names as keys and list of selected values as values
+                Example: {"Alliance": ["TFR", "TNS"], "Status": ["Active"]}
+    
+    Returns:
+        Filtered dataframe
+    """
+    filtered_df = df.copy()
+    
+    for column, selected_values in filters.items():
+        if not selected_values:  # Skip if no values selected
+            continue
+        if column not in filtered_df.columns:
+            continue
+        
+        # Case-insensitive matching for string columns
+        mask = filtered_df[column].astype(str).str.lower().isin([v.lower() for v in selected_values])
+        filtered_df = filtered_df[mask]
+    
+    return filtered_df
+
+
+def save_roster_to_excel(df: pd.DataFrame, file_path: str, sheet_name: str, save_to_original: bool = False) -> tuple[bool, str]:
+    """
+    Save roster dataframe back to Excel file.
+    Default target is roster_db.xlsx; if save_to_original=True, writes to original file.
+    
+    Args:
+        df: Dataframe to save
+        file_path: Path to original Excel file
+        sheet_name: Name of sheet to write to
+        save_to_original: if True, save to original file; else save to roster_db.xlsx
+    
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    try:
+        from openpyxl import load_workbook
+        import time
+        
+        # Choose target: roster_db.xlsx by default, or original if requested
+        target_path = Path(file_path) if save_to_original else Path(file_path).parent / "roster_db.xlsx"
+        
+        if target_path.exists():
+            # Load workbook and update specific sheet
+            with pd.ExcelWriter(target_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+        else:
+            # Create new file
+            df.to_excel(target_path, sheet_name=sheet_name, index=False)
+        
+        return True, f"✓ Changes saved to {target_path.name}"
+    except PermissionError:
+        # File is locked — try to save backup with timestamp
+        try:
+            ts = int(time.time())
+            backup_path = Path(file_path).parent / f"roster_backup_{ts}.xlsx"
+            df.to_excel(backup_path, sheet_name=sheet_name, index=False)
+            return True, f"✓ Original file locked; saved backup to {backup_path.name}"
+        except Exception as e2:
+            return False, f"✗ Error: File locked and backup also failed: {str(e2)}"
+    except Exception as e:
+        return False, f"✗ Error saving file: {str(e)}"
+
+
+def split_dataframe_by_status(df: pd.DataFrame, status_column: str = "Status") -> dict:
+    """
+    Split dataframe into separate dataframes by status value.
+    
+    Args:
+        df: Dataframe to split
+        status_column: Name of status column
+    
+    Returns:
+        Dict of {status: dataframe} for each unique status value
+    """
+    status_dfs = {}
+    if status_column not in df.columns:
+        return status_dfs
+    
+    for status in df[status_column].unique():
+        if pd.notna(status):
+            status_dfs[str(status)] = df[df[status_column] == status].reset_index(drop=True)
+    
+    return status_dfs
+
+
+def _tag_color_map(key: str) -> dict:
+    """Return color map for specific tag categories."""
+    if key == "TG Level":
+        return {
+            "TG5": "#e34242",
+            "TG4": "#f0c419",
+            "TG3": "#2b7bd3",
+            "TG2": "#2f9f6e",
+            "TG1": "#7b4ca6",
+        }
+    if key == "Alliance":
+        return {"TFR": "#ff9999", "TNS": "#c2f0c2", "EVA": "#cfe7ff", "RAW": "#ffd9b3", "DEU": "#e6ccff"}
+    # default
+    return {}
+
+
+def render_selected_badges(values: list, category: str) -> None:
+    """Render selected values as colored badges for visual aid."""
+    if not values:
+        return
+    cmap = _tag_color_map(category)
+    badges = []
+    for v in values:
+        color = cmap.get(v, "#dddddd")
+        badges.append(f"<span style='display:inline-block;padding:4px 8px;margin:2px;border-radius:12px;background:{color};color:#000;font-weight:600;font-size:12px;'>{v}</span>")
+    st.markdown("" + "".join(badges), unsafe_allow_html=True)
+
+
+def render_status_table(status: str, df: pd.DataFrame, color: str, roster_file: str, sheet_name: str) -> None:
+    """
+    Render a color-coded status table with edit capability.
+    
+    Args:
+        status: Status name (Active, Inactive, Part-Time)
+        df: Dataframe for this status
+        color: Hex color code (#00FF00 for green, #FF0000 for red, #FFFF00 for yellow)
+        roster_file: Path to roster Excel file
+        sheet_name: Name of sheet being edited
+    """
+    # Color-coded header
+    color_emoji = {"Active": "🟢", "Inactive": "🔴", "Part-Time": "🟡"}
+    emoji = color_emoji.get(status, "⚪")
+    
+    st.markdown(
+        f"""
+        <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 10px 0;">
+            <h4 style="color: black; margin: 0;">{emoji} {status} ({len(df)} members)</h4>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Editable table for this status
+    edited_status_df = st.data_editor(
+        df,
+        use_container_width=True,
+        num_rows="dynamic",
+        key=f"roster_editor_{status}",
+        hide_index=True
+    )
+    
+    # Save button for this specific status table
+    if st.button(f"💾 Save {status} Changes", key=f"save_{status}_btn"):
+        success, message = save_roster_to_excel(edited_status_df, roster_file, sheet_name)
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
+
+
+def render_roster_tab() -> None:
+    """Render the Roster tab with guild member data from KvK 2.xlsx"""
+    st.subheader("Guild Roster")
+    
+    # Try to load KvK 2.xlsx
+    roster_file = Path("KvK 2.xlsx")
+    if not roster_file.exists():
+        st.warning("KvK 2.xlsx file not found in the workspace.")
+        return
+    
+    try:
+        # Load all sheets from KvK 2.xlsx
+        xls = pd.ExcelFile(roster_file)
+        sheet_names = xls.sheet_names
+        
+        if not sheet_names:
+            st.warning("KvK 2.xlsx has no sheets.")
+            return
+        
+        # Let user select which sheet to view
+        selected_sheet = st.selectbox("Select sheet to view:", sheet_names, index=0)
+        
+        # Read the selected sheet
+        roster_df = pd.read_excel(roster_file, sheet_name=selected_sheet)
+        roster_df = roster_df.fillna("")
+
+        st.markdown(f"**Sheet:** {selected_sheet} | **Rows:** {len(roster_df)}")
+
+        # Keep editable copy in session state
+        if "edited_roster" not in st.session_state or st.session_state.get("edited_roster_sheet") != selected_sheet:
+            st.session_state["edited_roster"] = roster_df.copy()
+            st.session_state["edited_roster_sheet"] = selected_sheet
+        
+        # ===== STYLED PREVIEW WITH COLORS =====
+        color_map = getattr(KvK, "COLOR_MAP", {})
+        
+        def style_cell(val):
+            """Apply COLOR_MAP styling to cell value"""
+            if pd.isna(val) or val == "":
+                return ""
+            val_str = str(val).lower().strip()
+            for key, col_hex in color_map.items():
+                if key.lower() == val_str:
+                    try:
+                        c = col_hex.lstrip('#')
+                        r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+                        yiq = ((r*299)+(g*587)+(b*114))/1000
+                        txt_col = '#fff' if yiq < 128 else '#000'
+                    except:
+                        txt_col = '#000'
+                    return f"background-color: {col_hex}; color: {txt_col}; font-weight: bold;"
+            return ""
+        
+        styled_df = st.session_state["edited_roster"].style.applymap(style_cell)
+        st.dataframe(styled_df, use_container_width=True, height=300)
+        
+        # ===== EDITABLE DATA TABLE =====
+        
+        # Build column config with SelectboxColumn for known fields
+        column_config = {}
+        mapping = {
+            "Alliance": getattr(KvK, "ALLIANCE_OPTS", KvK.get_column_options(roster_df, "Alliance")),
+            "TG Level": getattr(KvK, "TG_OPTS", KvK.get_column_options(roster_df, "TG Level")),
+            "Status": getattr(KvK, "STATUS_OPTS", KvK.get_column_options(roster_df, "Status")),
+            "Availability": getattr(KvK, "AVAILABILITY_OPTS", KvK.get_column_options(roster_df, "Availability")),
+            "Position": getattr(KvK, "POSITION_OPTS", KvK.get_column_options(roster_df, "Position")),
+            "Object": getattr(KvK, "OBJECT_OPTS", KvK.get_column_options(roster_df, "Object")),
+        }
+        
+        # Add SelectboxColumn for columns that have options
+        for col_name, opts in mapping.items():
+            if col_name in roster_df.columns and opts and len(opts) > 0:
+                opts_clean = [str(o) for o in opts]
+                column_config[col_name] = st.column_config.SelectboxColumn(label=col_name, options=opts_clean)
+        
+        # Display editable table
+        edited_df = st.data_editor(
+            st.session_state["edited_roster"],
+            use_container_width=True,
+            num_rows="dynamic",
+            key="roster_data_editor",
+            hide_index=True,
+            column_config=column_config if column_config else None,
+        )
+        
+        # Update session state with edited data
+        st.session_state["edited_roster"] = edited_df.copy()
+        
+        # ===== SAVE CONTROLS =====
+        st.markdown("---")
+        col_save_orig, col_discard = st.columns([1.5, 1])
+        
+        with col_save_orig:
+            if st.button("💾 Save", key="save_original_btn", help="Save back to KvK 2.xlsx"):
+                success, message = save_roster_to_excel(
+                    edited_df,
+                    str(roster_file),
+                    selected_sheet,
+                    save_to_original=True
+                )
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+        
+        with col_discard:
+            if st.button("↩️ Discard", key="discard_roster_btn"):
+                st.session_state["edited_roster"] = roster_df.copy()
+                st.info("Changes discarded.")
+                st.rerun()
+        
+    except Exception as e:
+        st.error(f"Error loading roster data: {str(e)}")
+
+
+def render_object_distribution_tab() -> None:
+    """Render Object Distribution tab with members grouped by Object"""
+    st.subheader("Object Distribution")
+    
+    # Check if roster data is available in session state
+    if "edited_roster" not in st.session_state:
+        st.info("📋 Please open the Roster tab first to load roster data.")
+        return
+    
+    roster_df = st.session_state.get("edited_roster", pd.DataFrame())
+    if roster_df.empty:
+        st.warning("No roster data available.")
+        return
+    
+    # Check if required columns exist
+    required_cols = ["Name", "Position", "Object"]
+    missing_cols = [col for col in required_cols if col not in roster_df.columns]
+    if missing_cols:
+        st.error(f"Missing columns in roster: {', '.join(missing_cols)}")
+        return
+    
+    # Get Object options from KvK module
+    object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "Nord", "West", "East", "South", "CA"])
+    
+    # Group data by Object and display in expanders
+    found_any = False
+    for obj in object_opts:
+        # Filter rows for this Object
+        obj_df = roster_df[
+            (roster_df["Object"].astype(str).str.strip() == obj) & 
+            (roster_df["Object"].astype(str).str.strip() != "")
+        ][["Name", "Position", "Object"]].reset_index(drop=True)
+        
+        if len(obj_df) > 0:
+            found_any = True
+            
+            # Create expander with Object name and member count
+            with st.expander(
+                f"{obj} ({len(obj_df)} member{'s' if len(obj_df) != 1 else ''})",
+                expanded=False
+            ):
+                # Display table
+                st.dataframe(obj_df, use_container_width=True, hide_index=True)
+    
+    if not found_any:
+        st.info("No data available yet. Members will appear here once assigned to Objects in the Roster tab.")
+
+
 def main() -> None:
     inject_command_center_css()
     # Sidebar removed per user request
@@ -947,10 +1275,16 @@ def main() -> None:
     else:
         st.warning("Excel workbook not detected. Calculators still work with manual inputs.")
 
-    tab1 = st.tabs(["Waves + Counter Rally"])[0]
+    tab1, tab2, tab3 = st.tabs(["Waves + Counter Rally", "Roster", "Object Distribution"])
 
     with tab1:
         render_wave_and_timing_tab(excel_data)
+    
+    with tab2:
+        render_roster_tab()
+    
+    with tab3:
+        render_object_distribution_tab()
 
 
 if __name__ == "__main__":
