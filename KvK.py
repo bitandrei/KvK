@@ -7,7 +7,7 @@ TG_OPTS = ["TG1", "TG2", "TG3", "TG4", "TG5", "TG6", "TG7", "TG8"]
 STATUS_OPTS = ["Active", "Inactive", "Part-Time"]
 AVAILABILITY_OPTS = ["Yes", "No"]
 POSITION_OPTS = ["Leader", "Joiner"]
-OBJECT_OPTS = ["Castle", "Nord", "West", "East", "South", "CA"]
+OBJECT_OPTS = ["Castle", "Nord", "West", "East", "South", "CA TEAM"]
 
 # Color map (normalized keys are matched against lower-cased cell text)
 COLOR_MAP = {
@@ -22,6 +22,7 @@ COLOR_MAP = {
     "west": "#fd7e14",
     "south": "#6f42c1",
     "east": "#50C878",
+    "ca team": "#ff6b6b",
 }
 
 

@@ -21,14 +21,14 @@ A comprehensive Streamlit application for planning, coordinating, and managing K
   - **Status**: Active, Inactive, Part-Time
   - **Availability**: Yes, No
   - **Position**: Leader, Joiner
-  - **Object**: Castle, Nord, West, East, South, CA
+  - **Object**: Castle, Nord, West, East, South, CA TEAM
 - Color-coded preview display for quick visual reference
 - Multiple sheet support (switch between different rosters)
 - Save changes directly to Excel file
 
 ### 🎯 Object Distribution Tab
 - Automatically groups and displays members by combat Object
-- Expandable sections for each Object (Castle, Nord, West, East, South, CA)
+- Expandable sections for each Object (Castle, Nord, West, East, South, CA TEAM)
 - Shows member count per Object
 - Displays Name, Position, and Object assignment
 - Real-time synchronization with Roster tab changes

@@ -1235,7 +1235,7 @@ def render_object_distribution_tab() -> None:
         return
     
     # Get Object options from KvK module
-    object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "Nord", "West", "East", "South", "CA"])
+    object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "Nord", "West", "East", "South", "CA TEAM"])
     
     # Group data by Object and display in expanders
     found_any = False
