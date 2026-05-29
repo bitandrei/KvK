@@ -1151,7 +1151,7 @@ def render_roster_tab() -> None:
                     return f"background-color: {col_hex}; color: {txt_col}; font-weight: bold;"
             return ""
         
-        styled_df = st.session_state["edited_roster"].style.applymap(style_cell)
+        styled_df = st.session_state["edited_roster"].style.map(style_cell)
         st.dataframe(styled_df, use_container_width=True, height=300)
         
         # ===== EDITABLE DATA TABLE =====
