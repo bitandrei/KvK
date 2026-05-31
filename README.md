@@ -15,6 +15,12 @@ A comprehensive Streamlit application for planning, coordinating, and managing K
 
 ### 📋 Roster Tab
 - Load and manage guild member roster from `KvK 2.xlsx`
+- **🔍 Search & Filter:**
+  - Real-time name search to find members instantly
+  - Multi-select advanced filters:
+    - Filter by Alliance, TG Level, Status, and Object simultaneously
+    - Clear all filters with one click
+  - Shows count of displayed vs total members
 - Edit member data inline with per-column dropdowns:
   - **Alliance**: TFR, TNS, EVA, RAW, DEU
   - **TG Level**: TG1-TG8
@@ -22,6 +28,7 @@ A comprehensive Streamlit application for planning, coordinating, and managing K
   - **Availability**: Yes, No
   - **Position**: Leader, Joiner
   - **Object**: Castle, Nord, West, East, South, CA TEAM
+- **Edit Mode toggle** to lock/unlock editing (view-only when disabled)
 - Color-coded preview display for quick visual reference
 - Multiple sheet support (switch between different rosters)
 - Save changes directly to Excel file
@@ -70,10 +77,18 @@ The app will open at `http://localhost:8501` in your browser.
 ### Roster Management
 1. Navigate to the **Roster** tab
 2. Select the sheet to edit from dropdown
-3. Scroll through colored preview to see current state
-4. Edit any cell in the editable table using dropdowns for preset options
-5. Click **Save** to persist changes to `KvK 2.xlsx`
-6. Click **Discard** to revert changes without saving
+3. **Manage permissions:**
+   - Check ✅ **Edit Mode** checkbox to allow editing
+   - Uncheck to lock roster in view-only mode
+4. **Search & Filter:**
+   - Use 🔍 **Search by name** field for real-time member lookup
+   - Click 🔧 **Advanced Filters** to open multi-select filters
+   - Select Alliance, TG Level, Status, and/or Object to filter results
+   - Click 🔄 **Clear All Filters** to reset all filters
+5. Scroll through colored preview to see current state
+6. Edit any cell in the editable table using dropdowns for preset options (only if Edit Mode is enabled)
+7. Click **💾 Save** to persist changes to `KvK 2.xlsx`
+8. Click **↩️ Discard** to revert changes without saving
 
 ### Object Distribution
 1. Navigate to the **Object Distribution** tab

@@ -1098,6 +1098,25 @@ def render_status_table(status: str, df: pd.DataFrame, color: str, roster_file: 
             st.error(message)
 
 
+def search_roster_by_name(df: pd.DataFrame, search_text: str) -> pd.DataFrame:
+    """
+    Filter roster by member name using substring matching (case-insensitive).
+    
+    Args:
+        df: Roster dataframe
+        search_text: Search string
+    
+    Returns:
+        Filtered dataframe
+    """
+    if not search_text or not df["Name"]:
+        return df
+    
+    search_lower = search_text.lower().strip()
+    mask = df["Name"].astype(str).str.lower().str.contains(search_lower, regex=False, na=False)
+    return df[mask].reset_index(drop=True)
+
+
 def render_roster_tab() -> None:
     """Render the Roster tab with guild member data from KvK 2.xlsx"""
     st.subheader("Guild Roster")
@@ -1131,6 +1150,100 @@ def render_roster_tab() -> None:
             st.session_state["edited_roster"] = roster_df.copy()
             st.session_state["edited_roster_sheet"] = selected_sheet
         
+        # ===== SEARCH & FILTER CONTROLS =====
+        # Initialize filter state
+        if "roster_filters" not in st.session_state:
+            st.session_state["roster_filters"] = {
+                "name_search": "",
+                "alliance_filter": [],
+                "tg_filter": [],
+                "status_filter": [],
+                "object_filter": [],
+                "edit_mode": True,  # True = edit, False = view-only
+            }
+        
+        # Mode toggle and search bar in top row
+        mode_col, search_col = st.columns([1, 3])
+        
+        with mode_col:
+            edit_mode = st.checkbox("✏️ Edit Mode", value=st.session_state["roster_filters"]["edit_mode"], help="Disable to lock editing")
+            st.session_state["roster_filters"]["edit_mode"] = edit_mode
+        
+        with search_col:
+            search_text = st.text_input("🔍 Search by name:", value=st.session_state["roster_filters"]["name_search"], placeholder="Type member name...")
+            st.session_state["roster_filters"]["name_search"] = search_text
+        
+        # Multi-select filters in expandable section
+        with st.expander("🔧 Advanced Filters", expanded=False):
+            filter_col1, filter_col2 = st.columns(2)
+            
+            with filter_col1:
+                alliance_opts = sorted(set(st.session_state["edited_roster"]["Alliance"].astype(str).unique()) - {""})
+                alliance_selected = st.multiselect(
+                    "Alliance",
+                    options=alliance_opts,
+                    default=st.session_state["roster_filters"]["alliance_filter"],
+                    key="alliance_multi"
+                )
+                st.session_state["roster_filters"]["alliance_filter"] = alliance_selected
+                
+                tg_opts = sorted(set(st.session_state["edited_roster"]["TG Level"].astype(str).unique()) - {""})
+                tg_selected = st.multiselect(
+                    "TG Level",
+                    options=tg_opts,
+                    default=st.session_state["roster_filters"]["tg_filter"],
+                    key="tg_multi"
+                )
+                st.session_state["roster_filters"]["tg_filter"] = tg_selected
+            
+            with filter_col2:
+                status_opts = sorted(set(st.session_state["edited_roster"]["Status"].astype(str).unique()) - {""})
+                status_selected = st.multiselect(
+                    "Status",
+                    options=status_opts,
+                    default=st.session_state["roster_filters"]["status_filter"],
+                    key="status_multi"
+                )
+                st.session_state["roster_filters"]["status_filter"] = status_selected
+                
+                object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "Nord", "West", "East", "South", "CA TEAM"])
+                object_selected = st.multiselect(
+                    "Object",
+                    options=object_opts,
+                    default=st.session_state["roster_filters"]["object_filter"],
+                    key="object_multi"
+                )
+                st.session_state["roster_filters"]["object_filter"] = object_selected
+            
+            # Clear filters button
+            if st.button("🔄 Clear All Filters"):
+                st.session_state["roster_filters"] = {
+                    "name_search": "",
+                    "alliance_filter": [],
+                    "tg_filter": [],
+                    "status_filter": [],
+                    "object_filter": [],
+                    "edit_mode": True,
+                }
+                st.rerun()
+        
+        # Apply filters to roster data
+        filtered_df = search_roster_by_name(st.session_state["edited_roster"], search_text)
+        
+        filter_dict = {}
+        if st.session_state["roster_filters"]["alliance_filter"]:
+            filter_dict["Alliance"] = st.session_state["roster_filters"]["alliance_filter"]
+        if st.session_state["roster_filters"]["tg_filter"]:
+            filter_dict["TG Level"] = st.session_state["roster_filters"]["tg_filter"]
+        if st.session_state["roster_filters"]["status_filter"]:
+            filter_dict["Status"] = st.session_state["roster_filters"]["status_filter"]
+        if st.session_state["roster_filters"]["object_filter"]:
+            filter_dict["Object"] = st.session_state["roster_filters"]["object_filter"]
+        
+        filtered_df = apply_column_filters(filtered_df, filter_dict)
+        
+        st.markdown(f"**Displayed:** {len(filtered_df)} of {len(st.session_state['edited_roster'])} members")
+        
         # ===== STYLED PREVIEW WITH COLORS =====
         color_map = getattr(KvK, "COLOR_MAP", {})
         
@@ -1151,10 +1264,22 @@ def render_roster_tab() -> None:
                     return f"background-color: {col_hex}; color: {txt_col}; font-weight: bold;"
             return ""
         
-        styled_df = st.session_state["edited_roster"].style.map(style_cell)
+        styled_df = filtered_df.style.map(style_cell)
         st.dataframe(styled_df, use_container_width=True, height=300)
         
         # ===== EDITABLE DATA TABLE =====
+        
+        # Show message if filters are active
+        if search_text or any([
+            st.session_state["roster_filters"]["alliance_filter"],
+            st.session_state["roster_filters"]["tg_filter"],
+            st.session_state["roster_filters"]["status_filter"],
+            st.session_state["roster_filters"]["object_filter"],
+        ]):
+            st.info("ℹ️ Showing filtered results. Edit only the displayed members.")
+            display_df = filtered_df
+        else:
+            display_df = st.session_state["edited_roster"]
         
         # Build column config with SelectboxColumn for known fields
         column_config = {}
@@ -1175,25 +1300,39 @@ def render_roster_tab() -> None:
         
         # Display editable table
         edited_df = st.data_editor(
-            st.session_state["edited_roster"],
+            display_df,
             use_container_width=True,
             num_rows="dynamic",
             key="roster_data_editor",
             hide_index=True,
+            disabled=not st.session_state["roster_filters"]["edit_mode"],
             column_config=column_config if column_config else None,
         )
         
         # Update session state with edited data
-        st.session_state["edited_roster"] = edited_df.copy()
+        if st.session_state["roster_filters"]["edit_mode"]:
+            # If showing filtered data, update only those rows in the full roster
+            if display_df is not st.session_state["edited_roster"]:
+                # Find and update matching rows
+                for idx, filtered_row in edited_df.iterrows():
+                    for full_idx, full_row in st.session_state["edited_roster"].iterrows():
+                        if full_row["Name"] == filtered_row["Name"]:  # Match by name
+                            st.session_state["edited_roster"].iloc[full_idx] = filtered_row
+                            break
+            else:
+                # If showing all data, update directly
+                st.session_state["edited_roster"] = edited_df.copy()
         
         # ===== SAVE CONTROLS =====
         st.markdown("---")
         col_save_orig, col_discard = st.columns([1.5, 1])
         
         with col_save_orig:
-            if st.button("💾 Save", key="save_original_btn", help="Save back to KvK 2.xlsx"):
+            if not st.session_state["roster_filters"]["edit_mode"]:
+                st.button("💾 Save", disabled=True, key="save_original_btn", help="Enable Edit Mode to save")
+            elif st.button("💾 Save", key="save_original_btn", help="Save back to KvK 2.xlsx"):
                 success, message = save_roster_to_excel(
-                    edited_df,
+                    st.session_state["edited_roster"],
                     str(roster_file),
                     selected_sheet,
                     save_to_original=True
@@ -1204,7 +1343,9 @@ def render_roster_tab() -> None:
                     st.error(message)
         
         with col_discard:
-            if st.button("↩️ Discard", key="discard_roster_btn"):
+            if not st.session_state["roster_filters"]["edit_mode"]:
+                st.button("↩️ Discard", disabled=True, key="discard_roster_btn", help="Enable Edit Mode to discard")
+            elif st.button("↩️ Discard", key="discard_roster_btn"):
                 st.session_state["edited_roster"] = roster_df.copy()
                 st.info("Changes discarded.")
                 st.rerun()
