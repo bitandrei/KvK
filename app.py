@@ -135,6 +135,395 @@ def inject_command_center_css() -> None:
                     padding: 0.5rem;
                 }
             }
+            
+            /* CASTLE MAP */
+            .castle-map-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 2rem;
+                margin: 2rem 0;
+                padding: 2rem;
+                background: rgba(15, 24, 44, 0.5);
+                border-radius: 1rem;
+                border: 1px solid #2f3f65;
+            }
+            
+            .map-layout {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+                width: 100%;
+            }
+            
+            .turrets-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                grid-template-rows: 1fr 1fr 1fr;
+                gap: 1rem;
+                width: 100%;
+                max-width: 600px;
+                aspect-ratio: 1;
+                padding: 1rem;
+            }
+            
+            .turret-north {
+                grid-column: 2;
+                grid-row: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .turret-west {
+                grid-column: 1;
+                grid-row: 2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .castle-center {
+                grid-column: 2;
+                grid-row: 2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .turret-east {
+                grid-column: 3;
+                grid-row: 2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .turret-south {
+                grid-column: 2;
+                grid-row: 3;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .turret {
+                width: 80px;
+                height: 80px;
+                border: 2px solid;
+                border-radius: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background: rgba(15, 24, 44, 0.8);
+                transform: rotate(45deg);
+                position: relative;
+            }
+            
+            .turret:hover {
+                transform: rotate(45deg) scale(1.1);
+                box-shadow: 0 0 20px rgba(111, 138, 221, 0.5);
+            }
+            
+            .turret.selected {
+                box-shadow: 0 0 30px currentColor;
+                border-width: 3px;
+            }
+            
+            .turret-inner {
+                transform: rotate(-45deg);
+                text-align: center;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                font-size: 11px;
+                font-weight: 600;
+                color: #f3f6ff;
+                gap: 2px;
+            }
+            
+            .turret-name {
+                font-size: 12px;
+                font-weight: 700;
+            }
+            
+            .turret-count {
+                font-size: 10px;
+                opacity: 0.9;
+            }
+            
+            .castle {
+                width: 100px;
+                height: 100px;
+                border: 2px solid #28a745;
+                border-radius: 12px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background: rgba(40, 167, 69, 0.15);
+            }
+            
+            .castle:hover {
+                transform: scale(1.08);
+                box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+            }
+            
+            .castle.selected {
+                box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
+                border-width: 3px;
+            }
+            
+            .castle-inner {
+                text-align: center;
+                font-size: 12px;
+                font-weight: 700;
+                color: #28a745;
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            
+            .castle-emoji {
+                font-size: 32px;
+            }
+            
+            .castle-count {
+                font-size: 11px;
+            }
+            
+            .ca-team-section {
+                width: 100%;
+                padding: 1.5rem;
+                background: rgba(15, 24, 44, 0.8);
+                border: 2px solid #ff6b6b;
+                border-radius: 0.75rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .ca-team-section:hover {
+                transform: scale(1.02);
+                box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+            }
+            
+            .ca-team-section.selected {
+                box-shadow: 0 0 30px rgba(255, 107, 107, 0.6);
+                border-width: 3px;
+            }
+            
+            .ca-team-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                color: #ff6b6b;
+                font-weight: 700;
+                font-size: 14px;
+            }
+            
+            .member-list-container {
+                margin-top: 2rem;
+                padding: 1.5rem;
+                background: rgba(15, 24, 44, 0.9);
+                border: 1px solid #2f3f65;
+                border-radius: 0.75rem;
+                width: 100%;
+                max-width: 800px;
+            }
+            
+            .member-list-header {
+                font-size: 16px;
+                font-weight: 700;
+                color: #f3f6ff;
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .member-list-content {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 0.75rem;
+            }
+            
+            .member-item {
+                padding: 0.75rem;
+                background: rgba(43, 68, 124, 0.3);
+                border: 1px solid #2f3f65;
+                border-radius: 0.5rem;
+                font-size: 13px;
+                color: #dbe2ff;
+            }
+            
+            .member-name {
+                font-weight: 600;
+                color: #f3f6ff;
+                margin-bottom: 0.3rem;
+            }
+            
+            .member-info {
+                font-size: 12px;
+                opacity: 0.85;
+            }
+            
+            .no-members-message {
+                text-align: center;
+                padding: 2rem;
+                color: #999;
+                font-style: italic;
+            }
+            
+            .capacity-badge {
+                display: inline-block;
+                padding: 0.25rem 0.6rem;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-left: 0.5rem;
+            }
+            
+            .capacity-ok {
+                background: rgba(40, 167, 69, 0.3);
+                color: #28a745;
+            }
+            
+            .capacity-warning {
+                background: rgba(255, 193, 7, 0.3);
+                color: #ffc107;
+            }
+            
+            .capacity-critical {
+                background: rgba(220, 53, 69, 0.3);
+                color: #dc3545;
+            }
+            
+            /* RESPONSIVE CASTLE MAP */
+            @media (max-width: 768px) {
+                .castle-map-container {
+                    padding: 1rem;
+                    gap: 1.5rem;
+                }
+                
+                .turrets-grid {
+                    max-width: 400px;
+                    gap: 0.75rem;
+                    padding: 0.75rem;
+                }
+                
+                .turret {
+                    width: 60px;
+                    height: 60px;
+                    border-width: 1.5px;
+                }
+                
+                .turret-inner {
+                    font-size: 9px;
+                    gap: 1px;
+                }
+                
+                .turret-name {
+                    font-size: 10px;
+                }
+                
+                .turret-count {
+                    font-size: 9px;
+                }
+                
+                .castle {
+                    width: 75px;
+                    height: 75px;
+                    border-width: 1.5px;
+                }
+                
+                .castle-inner {
+                    font-size: 11px;
+                    gap: 2px;
+                }
+                
+                .castle-emoji {
+                    font-size: 24px;
+                }
+                
+                .castle-count {
+                    font-size: 10px;
+                }
+                
+                .ca-team-section {
+                    padding: 1rem;
+                    border-width: 1.5px;
+                }
+                
+                .member-list-container {
+                    max-width: 100%;
+                    padding: 1rem;
+                }
+                
+                .member-list-content {
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .castle-map-container {
+                    padding: 0.75rem;
+                    gap: 1rem;
+                    margin: 1rem 0;
+                }
+                
+                .turrets-grid {
+                    max-width: 100%;
+                    gap: 0.5rem;
+                    padding: 0.5rem;
+                }
+                
+                .turret {
+                    width: 50px;
+                    height: 50px;
+                    border-width: 1px;
+                }
+                
+                .turret-inner {
+                    font-size: 8px;
+                    gap: 1px;
+                }
+                
+                .turret-name {
+                    font-size: 9px;
+                }
+                
+                .castle {
+                    width: 60px;
+                    height: 60px;
+                    border-width: 1px;
+                }
+                
+                .castle-inner {
+                    font-size: 10px;
+                }
+                
+                .castle-emoji {
+                    font-size: 18px;
+                }
+                
+                .member-list-container {
+                    padding: 0.75rem;
+                }
+                
+                .member-list-content {
+                    grid-template-columns: 1fr;
+                }
+            }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1591,6 +1980,215 @@ def render_object_distribution_tab() -> None:
         st.info("No data available yet. Members will appear here once assigned to Objects in the Roster tab.")
 
 
+def render_member_details_for_turret(turret_name: str, roster_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get members assigned to a specific turret/object.
+    
+    Args:
+        turret_name: Object name (e.g., "North", "Castle")
+        roster_df: Roster dataframe
+    
+    Returns:
+        Filtered and formatted dataframe with Name, Position, Alliance columns, sorted by Position and Name
+    """
+    if roster_df.empty:
+        return pd.DataFrame()
+    
+    # Filter by Object
+    filtered = roster_df[
+        (roster_df["Object"].astype(str).str.strip() == turret_name) & 
+        (roster_df["Object"].astype(str).str.strip() != "")
+    ].copy()
+    
+    # Select columns
+    cols_to_keep = []
+    if "Name" in filtered.columns:
+        cols_to_keep.append("Name")
+    if "Position" in filtered.columns:
+        cols_to_keep.append("Position")
+    if "Alliance" in filtered.columns:
+        cols_to_keep.append("Alliance")
+    
+    if not cols_to_keep:
+        return filtered[["Object"]].head(0)
+    
+    filtered = filtered[cols_to_keep].reset_index(drop=True)
+    
+    # Sort: Leader first, then alphabetically by name
+    if "Position" in filtered.columns and "Name" in filtered.columns:
+        filtered["_sort_position"] = filtered["Position"].apply(lambda x: 0 if str(x).strip() == "Leader" else 1)
+        filtered = filtered.sort_values(["_sort_position", "Name"], na_position="last").drop("_sort_position", axis=1)
+    elif "Name" in filtered.columns:
+        filtered = filtered.sort_values("Name")
+    
+    return filtered.reset_index(drop=True)
+
+
+def render_castle_map_tab() -> None:
+    """Render interactive castle map with clickable turrets showing member assignments"""
+    st.subheader("🗺️ Interactive Castle Map")
+    
+    # Check if roster data is available
+    if "edited_roster" not in st.session_state:
+        st.info("📋 Please open the Roster tab first to load roster data.")
+        return
+    
+    roster_df = st.session_state.get("edited_roster", pd.DataFrame())
+    if roster_df.empty:
+        st.warning("No roster data available.")
+        return
+    
+    # Initialize session state for selected turret
+    if "selected_turret" not in st.session_state:
+        st.session_state["selected_turret"] = "Castle"
+    
+    # Get object options and max capacities
+    object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "North", "West", "East", "South", "CA TEAM"])
+    max_capacity = {
+        "Castle": 15,
+        "North": 15,
+        "South": 15,
+        "East": 15,
+        "West": 15,
+        "CA TEAM": 30
+    }
+    
+    # Get color map
+    color_map = getattr(KvK, "COLOR_MAP", {})
+    
+    def get_turret_color(turret_name: str) -> str:
+        """Get hex color for turret from COLOR_MAP"""
+        key = turret_name.lower()
+        sorted_keys = sorted(color_map.items(), key=lambda x: len(x[0]), reverse=True)
+        for k, v in sorted_keys:
+            if k in key:
+                return v
+        return "#2f3f65"
+    
+    # Create main container
+    st.markdown('<div class="castle-map-container">', unsafe_allow_html=True)
+    
+    # Render the map grid
+    st.markdown('<div class="map-layout">', unsafe_allow_html=True)
+    st.markdown('<div class="turrets-grid">', unsafe_allow_html=True)
+    
+    # Create columns for turret buttons (using raw HTML for better layout control)
+    turret_data = [
+        ("North", "🗻", "turret-north"),
+        ("West", "🗻", "turret-west"),
+        ("Castle", "🏰", "castle"),
+        ("East", "🗻", "turret-east"),
+        ("South", "🗻", "turret-south"),
+    ]
+    
+    # Render turret buttons
+    for turret_name, emoji, grid_class in turret_data:
+        count = len(render_member_details_for_turret(turret_name, roster_df))
+        capacity = max_capacity.get(turret_name, 15)
+        color = get_turret_color(turret_name)
+        is_selected = st.session_state["selected_turret"] == turret_name
+        
+        if turret_name == "Castle":
+            # Special styling for castle
+            if st.button(
+                f"{emoji} {turret_name}\n{count}/{capacity}",
+                key=f"btn_{turret_name}",
+                use_container_width=False,
+                help=f"Click to view {turret_name} members"
+            ):
+                st.session_state["selected_turret"] = turret_name
+                st.rerun()
+        else:
+            # Turret buttons
+            if st.button(
+                f"{emoji}\n{turret_name}\n{count}/{capacity}",
+                key=f"btn_{turret_name}",
+                use_container_width=False,
+                help=f"Click to view {turret_name} members"
+            ):
+                st.session_state["selected_turret"] = turret_name
+                st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # close turrets-grid
+    
+    # Render CA TEAM section
+    ca_count = len(render_member_details_for_turret("CA TEAM", roster_df))
+    ca_capacity = max_capacity["CA TEAM"]
+    
+    if st.button(
+        f"🎯 CA TEAM: {ca_count}/{ca_capacity}",
+        key="btn_CA_TEAM",
+        use_container_width=True,
+        help="Click to view CA TEAM members"
+    ):
+        st.session_state["selected_turret"] = "CA TEAM"
+        st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # close map-layout
+    
+    # Display selected turret's members
+    st.markdown("---")
+    selected = st.session_state["selected_turret"]
+    selected_df = render_member_details_for_turret(selected, roster_df)
+    selected_count = len(selected_df)
+    selected_capacity = max_capacity.get(selected, 15)
+    
+    # Capacity badge color
+    if selected_count >= selected_capacity:
+        capacity_class = "capacity-critical"
+    elif selected_count >= selected_capacity * 0.75:
+        capacity_class = "capacity-warning"
+    else:
+        capacity_class = "capacity-ok"
+    
+    emoji_map = {
+        "Castle": "🏰",
+        "North": "🗻",
+        "South": "🗻",
+        "East": "🗻",
+        "West": "🗻",
+        "CA TEAM": "🎯"
+    }
+    
+    emoji = emoji_map.get(selected, "📍")
+    st.markdown(
+        f'<div class="member-list-container">'
+        f'<div class="member-list-header">'
+        f'{emoji} {selected} Members '
+        f'<span class="capacity-badge {capacity_class}">{selected_count}/{selected_capacity}</span>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+    
+    if selected_df.empty:
+        st.markdown('<div class="no-members-message">No members assigned to this location yet.</div>', unsafe_allow_html=True)
+    else:
+        # Display members in grid
+        st.markdown('<div class="member-list-content">', unsafe_allow_html=True)
+        for _, row in selected_df.iterrows():
+            name = str(row.get("Name", "?")).strip()
+            position = str(row.get("Position", "")).strip() if "Position" in row.index else ""
+            alliance = str(row.get("Alliance", "")).strip() if "Alliance" in row.index else ""
+            
+            member_html = f'<div class="member-item"><div class="member-name">{name}</div>'
+            if position or alliance:
+                member_html += f'<div class="member-info">'
+                if position:
+                    member_html += f'{position}'
+                if position and alliance:
+                    member_html += ' • '
+                if alliance:
+                    member_html += f'{alliance}'
+                member_html += f'</div>'
+            member_html += f'</div>'
+            st.markdown(member_html, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # close member-list-content
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # close member-list-container
+    st.markdown('</div>', unsafe_allow_html=True)  # close castle-map-container
+
+
 def main() -> None:
     # Initialize session state
     if "roster_filters" not in st.session_state:
@@ -1620,7 +2218,7 @@ def main() -> None:
     else:
         st.warning("Excel workbook not detected. Calculators still work with manual inputs.")
 
-    tab1, tab2, tab3 = st.tabs(["🌊 Waves + Counter Rally", "📋 Roster", "🎯 Object Distribution"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🌊 Waves + Counter Rally", "📋 Roster", "🎯 Object Distribution", "🗺️ Castle Map"])
 
     with tab1:
         render_wave_and_timing_tab(excel_data)
@@ -1630,6 +2228,9 @@ def main() -> None:
     
     with tab3:
         render_object_distribution_tab()
+    
+    with tab4:
+        render_castle_map_tab()
 
 
 if __name__ == "__main__":
