@@ -223,16 +223,19 @@ def inject_command_center_css() -> None:
                 background: rgba(15, 24, 44, 0.8);
                 transform: rotate(45deg);
                 position: relative;
+                box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
             }
             
             .turret:hover {
                 transform: rotate(45deg) scale(1.1);
-                box-shadow: 0 0 20px rgba(111, 138, 221, 0.5);
+                box-shadow: 0 0 20px rgba(111, 138, 221, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.3);
+                border-width: 2.5px;
             }
             
             .turret.selected {
-                box-shadow: 0 0 30px currentColor;
+                box-shadow: 0 0 30px currentColor, inset 0 0 15px rgba(111, 138, 221, 0.3);
                 border-width: 3px;
+                transform: rotate(45deg) scale(1.15);
             }
             
             .turret-inner {
@@ -272,16 +275,19 @@ def inject_command_center_css() -> None:
                 cursor: pointer;
                 transition: all 0.3s ease;
                 background: rgba(40, 167, 69, 0.15);
+                box-shadow: inset 0 0 15px rgba(40, 167, 69, 0.1), 0 0 15px rgba(40, 167, 69, 0.2);
             }
             
             .castle:hover {
                 transform: scale(1.08);
-                box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+                box-shadow: 0 0 25px rgba(40, 167, 69, 0.6), inset 0 0 15px rgba(40, 167, 69, 0.2);
+                border-width: 2.5px;
             }
             
             .castle.selected {
-                box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
+                box-shadow: 0 0 40px rgba(40, 167, 69, 0.9), inset 0 0 20px rgba(40, 167, 69, 0.3);
                 border-width: 3px;
+                transform: scale(1.12);
             }
             
             .castle-inner {
@@ -2136,10 +2142,20 @@ def render_castle_map_tab() -> None:
     # Capacity badge color
     if selected_count >= selected_capacity:
         capacity_class = "capacity-critical"
+        fill_percent = 100
+        fill_color = "#dc3545"
     elif selected_count >= selected_capacity * 0.75:
         capacity_class = "capacity-warning"
+        fill_percent = int((selected_count / selected_capacity) * 100)
+        fill_color = "#ffc107"
+    elif selected_count >= selected_capacity * 0.5:
+        capacity_class = "capacity-ok"
+        fill_percent = int((selected_count / selected_capacity) * 100)
+        fill_color = "#ffc107"
     else:
         capacity_class = "capacity-ok"
+        fill_percent = int((selected_count / selected_capacity) * 100)
+        fill_color = "#28a745"
     
     emoji_map = {
         "Castle": "🏰",
@@ -2151,14 +2167,22 @@ def render_castle_map_tab() -> None:
     }
     
     emoji = emoji_map.get(selected, "📍")
-    st.markdown(
-        f'<div class="member-list-container">'
-        f'<div class="member-list-header">'
-        f'{emoji} {selected} Members '
-        f'<span class="capacity-badge {capacity_class}">{selected_count}/{selected_capacity}</span>'
-        f'</div>',
-        unsafe_allow_html=True
-    )
+    
+    # Create progress bar HTML
+    progress_html = f'''
+    <div class="member-list-container">
+        <div class="member-list-header">
+            {emoji} {selected} Members
+            <span class="capacity-badge {capacity_class}">{selected_count}/{selected_capacity}</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {fill_percent}%; background: linear-gradient(90deg, {fill_color}, #20c997);">
+                {fill_percent}%
+            </div>
+        </div>
+    '''
+    
+    st.markdown(progress_html, unsafe_allow_html=True)
     
     if selected_df.empty:
         st.markdown('<div class="no-members-message">No members assigned to this location yet.</div>', unsafe_allow_html=True)
