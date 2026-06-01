@@ -55,6 +55,86 @@ def inject_command_center_css() -> None:
                 background: rgba(55, 81, 154, 0.35);
                 margin-right: 0.35rem;
             }
+            
+            /* OBJECT INDICATORS */
+            .object-indicator {
+                border: 1px solid #2f3f65;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                background: rgba(15, 24, 44, 0.85);
+            }
+            .object-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+                color: #f3f6ff;
+            }
+            .progress-bar {
+                width: 100%;
+                height: 24px;
+                background-color: rgba(50, 50, 50, 0.2);
+                border-radius: 4px;
+                overflow: hidden;
+                margin-bottom: 0.5rem;
+                border: 1px solid #2f3f65;
+            }
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #28a745, #20c997);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+                transition: width 0.3s ease;
+            }
+            .progress-text {
+                color: #dbe2ff;
+                font-size: 0.85rem;
+                text-align: right;
+            }
+            
+            /* MOBILE RESPONSIVE */
+            @media (max-width: 768px) {
+                .stApp {
+                    padding: 0.5rem;
+                }
+                .object-indicator {
+                    padding: 0.75rem;
+                    margin-bottom: 0.75rem;
+                }
+                .object-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+                .progress-bar {
+                    margin-top: 0.5rem;
+                    height: 20px;
+                }
+                .progress-fill {
+                    font-size: 11px;
+                }
+                .stTabs [data-baseweb="tab-list"] {
+                    gap: 0.2rem;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                h1 {
+                    font-size: 1.5rem !important;
+                }
+                h2 {
+                    font-size: 1.2rem !important;
+                }
+                .stMetric {
+                    padding: 0.5rem;
+                }
+            }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1206,7 +1286,7 @@ def render_roster_tab() -> None:
                 )
                 st.session_state["roster_filters"]["status_filter"] = status_selected
                 
-                object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "Nord", "West", "East", "South", "CA TEAM"])
+                object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "North", "West", "East", "South", "CA TEAM"])
                 object_selected = st.multiselect(
                     "Object",
                     options=object_opts,
@@ -1248,12 +1328,14 @@ def render_roster_tab() -> None:
         color_map = getattr(KvK, "COLOR_MAP", {})
         
         def style_cell(val):
-            """Apply COLOR_MAP styling to cell value"""
+            """Apply COLOR_MAP styling to cell value using substring matching (longer keys first)"""
             if pd.isna(val) or val == "":
                 return ""
             val_str = str(val).lower().strip()
-            for key, col_hex in color_map.items():
-                if key.lower() == val_str:
+            # Sort keys by length (longest first) to avoid conflicts (e.g., "ca team" before checking substrings)
+            sorted_keys = sorted(color_map.items(), key=lambda x: len(x[0]), reverse=True)
+            for key, col_hex in sorted_keys:
+                if key in val_str:
                     try:
                         c = col_hex.lstrip('#')
                         r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
@@ -1354,6 +1436,107 @@ def render_roster_tab() -> None:
         st.error(f"Error loading roster data: {str(e)}")
 
 
+def render_object_indicators(roster_df: pd.DataFrame) -> None:
+    """Render visual progress indicators for each combat Object.
+    
+    Displays progress bars with member counts and percentages for each Object.
+    Shows: Castle 10/15, North 15/15, South 15/15, East 15/15, West 15/15, CA TEAM 30/30
+    """
+    st.markdown("### 🎯 Object Capacity Overview")
+    
+    # Define max capacity per object
+    max_capacity = {
+        "Castle": 15,
+        "North": 15,
+        "South": 15,
+        "East": 15,
+        "West": 15,
+        "CA TEAM": 30
+    }
+    
+    object_opts = getattr(KvK, "OBJECT_OPTS", list(max_capacity.keys()))
+    
+    # Create responsive columns based on screen size
+    # On mobile: 1 column, on desktop: 2-3 columns
+    cols_per_row = 1
+    try:
+        # This is a heuristic for mobile detection
+        if st.session_state.get("screen_width", 1200) < 768:
+            cols_per_row = 1
+        elif st.session_state.get("screen_width", 1200) < 1200:
+            cols_per_row = 2
+        else:
+            cols_per_row = 3
+    except:
+        cols_per_row = 2
+    
+    # Render indicators
+    col_idx = 0
+    cols = []
+    
+    for obj in object_opts:
+        if col_idx % cols_per_row == 0:
+            cols = st.columns(cols_per_row)
+        
+        with cols[col_idx % cols_per_row]:
+            # Count members in this object
+            obj_count = len(roster_df[
+                (roster_df["Object"].astype(str).str.strip() == obj) & 
+                (roster_df["Object"].astype(str).str.strip() != "")
+            ])
+            
+            max_cap = max_capacity.get(obj, 15)
+            pct = (obj_count / max_cap * 100) if max_cap > 0 else 0
+            pct = min(pct, 100)  # Cap at 100%
+            
+            # Determine color based on capacity
+            if pct >= 100:
+                bar_color = "#28a745"  # Green
+                status = "✅ FULL"
+            elif pct >= 75:
+                bar_color = "#20c997"  # Light green
+                status = "⚠️ 75%+"
+            elif pct >= 50:
+                bar_color = "#ffc107"  # Yellow
+                status = "📊 50%+"
+            else:
+                bar_color = "#ff6b6b"  # Red
+                status = "📭 <50%"
+            
+            # Emoji for each object
+            obj_emoji = {
+                "Castle": "🏰",
+                "North": "🗻",
+                "South": "🌋",
+                "East": "🏔️",
+                "West": "⚔️",
+                "CA TEAM": "👥"
+            }
+            emoji = obj_emoji.get(obj, "📍")
+            
+            # HTML for progress indicator
+            html_content = f"""
+            <div class="object-indicator">
+                <div class="object-header">
+                    <span>{emoji} {obj}</span>
+                    <span style="color: #aaaaaa; font-size: 0.9em;">{status}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {pct}%; background: linear-gradient(90deg, {bar_color}, {'#' + format(int(int(bar_color[1:], 16) * 1.1) % 0xFFFFFF, '06x')}); color: white;">
+                        {int(pct)}%
+                    </div>
+                </div>
+                <div class="progress-text">
+                    {obj_count}/{max_cap} members
+                </div>
+            </div>
+            """
+            
+            st.markdown(html_content, unsafe_allow_html=True)
+        
+        col_idx += 1
+
+
 def render_object_distribution_tab() -> None:
     """Render Object Distribution tab with members grouped by Object"""
     st.subheader("Object Distribution")
@@ -1368,6 +1551,12 @@ def render_object_distribution_tab() -> None:
         st.warning("No roster data available.")
         return
     
+    # Show visual indicators first
+    render_object_indicators(roster_df)
+    
+    st.markdown("---")
+    st.markdown("### 📋 Detailed Member List")
+    
     # Check if required columns exist
     required_cols = ["Name", "Position", "Object"]
     missing_cols = [col for col in required_cols if col not in roster_df.columns]
@@ -1376,7 +1565,7 @@ def render_object_distribution_tab() -> None:
         return
     
     # Get Object options from KvK module
-    object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "Nord", "West", "East", "South", "CA TEAM"])
+    object_opts = getattr(KvK, "OBJECT_OPTS", ["Castle", "North", "West", "East", "South", "CA TEAM"])
     
     # Group data by Object and display in expanders
     found_any = False
@@ -1403,10 +1592,25 @@ def render_object_distribution_tab() -> None:
 
 
 def main() -> None:
+    # Initialize session state
+    if "roster_filters" not in st.session_state:
+        st.session_state["roster_filters"] = {
+            "name_search": "",
+            "alliance_filter": [],
+            "tg_filter": [],
+            "status_filter": [],
+            "object_filter": [],
+            "edit_mode": False
+        }
+    if "edited_roster" not in st.session_state:
+        st.session_state["edited_roster"] = pd.DataFrame()
+    if "edited_roster_sheet" not in st.session_state:
+        st.session_state["edited_roster_sheet"] = ""
+    
+    # Apply CSS
     inject_command_center_css()
-    # Sidebar removed per user request
-
-    st.title("KvK Castle Battle Command Center")
+    
+    st.title("🏰 KvK Castle Battle Command Center")
     st.caption("Strategy-assisted battle orchestration based on wave funnel and command cadence.")
 
     uploaded = st.file_uploader("Optional: Upload KvK_Battle_Calculators (1).xlsx", type=["xlsx"])
@@ -1416,7 +1620,7 @@ def main() -> None:
     else:
         st.warning("Excel workbook not detected. Calculators still work with manual inputs.")
 
-    tab1, tab2, tab3 = st.tabs(["Waves + Counter Rally", "Roster", "Object Distribution"])
+    tab1, tab2, tab3 = st.tabs(["🌊 Waves + Counter Rally", "📋 Roster", "🎯 Object Distribution"])
 
     with tab1:
         render_wave_and_timing_tab(excel_data)

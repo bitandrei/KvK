@@ -5,6 +5,7 @@ A comprehensive Streamlit application for planning, coordinating, and managing K
 ## Features
 
 ### 🌊 Waves + Counter Rally Tab
+
 - Calculate Wave 1, 2, and 3 launch times with adjustable march durations
 - Wave 2/3 offsets: fixed at +15s and +30s from Wave 1
 - Create **staggered arrival** plans (different arrival times for each wave)
@@ -14,6 +15,7 @@ A comprehensive Streamlit application for planning, coordinating, and managing K
 - Optional Excel calculator integration for preset values
 
 ### 📋 Roster Tab
+
 - Load and manage guild member roster from `KvK 2.xlsx`
 - **🔍 Search & Filter:**
   - Real-time name search to find members instantly
@@ -27,21 +29,23 @@ A comprehensive Streamlit application for planning, coordinating, and managing K
   - **Status**: Active, Inactive, Part-Time
   - **Availability**: Yes, No
   - **Position**: Leader, Joiner
-  - **Object**: Castle, Nord, West, East, South, CA TEAM
+  - **Object**: Castle, North, West, East, South, CA TEAM
 - **Edit Mode toggle** to lock/unlock editing (view-only when disabled)
 - Color-coded preview display for quick visual reference
 - Multiple sheet support (switch between different rosters)
 - Save changes directly to Excel file
 
 ### 🎯 Object Distribution Tab
+
 - Automatically groups and displays members by combat Object
-- Expandable sections for each Object (Castle, Nord, West, East, South, CA TEAM)
+- Expandable sections for each Object (Castle, North, West, East, South, CA TEAM)
 - Shows member count per Object
 - Displays Name, Position, and Object assignment
 - Real-time synchronization with Roster tab changes
 - Read-only view (editing done in Roster tab)
 
 ## Prerequisites
+
 - Python 3.10 or newer
 - Git (optional, for deployment)
 
@@ -69,12 +73,14 @@ The app will open at `http://localhost:8501` in your browser.
 ## Usage
 
 ### Waves + Counter Rally
+
 1. Upload optional Excel calculator (`KvK_Battle_Calculators (1).xlsx`) for preset values
 2. Adjust Wave 1 launch time and march durations
 3. Choose staggered or synchronized arrival mode
 4. Copy generated command messages for voice/text coordination
 
 ### Roster Management
+
 1. Navigate to the **Roster** tab
 2. Select the sheet to edit from dropdown
 3. **Manage permissions:**
@@ -91,6 +97,7 @@ The app will open at `http://localhost:8501` in your browser.
 8. Click **↩️ Discard** to revert changes without saving
 
 ### Object Distribution
+
 1. Navigate to the **Object Distribution** tab
 2. First open **Roster** tab to load roster data
 3. Expand each Object section to view assigned members
@@ -137,6 +144,7 @@ KVK/
 ## Configuration
 
 All configuration is done through the Streamlit UI:
+
 - Roster file: `KvK 2.xlsx` (auto-loaded)
 - Save locations: Original file (`KvK 2.xlsx`) or backup (`roster_db.xlsx`)
 - Color scheme and styling: Defined in `KvK.COLOR_MAP`
@@ -153,18 +161,22 @@ All configuration is done through the Streamlit UI:
 ## Troubleshooting
 
 **"KvK 2.xlsx file not found"**
+
 - Ensure `KvK 2.xlsx` is in the same directory as `app.py`
 - Check that the file is not open in another application
 
 **Dropdowns not appearing in Roster tab**
+
 - Verify that column names match: Alliance, TG Level, Status, Availability, Position, Object
 - Check that `KvK.py` has correct option lists defined
 
 **Object Distribution shows "No data available"**
+
 - Open Roster tab first to load roster data into session state
 - Ensure members have Object assignments
 
 **Excel file locked error**
+
 - Close the Excel file if it's open in another application
 - App will auto-save to `roster_backup_<timestamp>.xlsx` if original is locked
 
